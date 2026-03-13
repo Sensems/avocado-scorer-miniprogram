@@ -10,39 +10,13 @@
     </view>
 
     <view class="action-area">
-      <view class="join-room">
-        <text class="label">输入房间号加入</text>
-        <view class="room-input-container">
-          <input
-            v-model="inputRoomId"
-            class="hidden-input"
-            type="text"
-            maxlength="6"
-            :focus="isInputFocused"
-            @blur="isInputFocused = false"
-            @input="onInputRoomId"
-          >
-          <view class="fake-input-row" @click="focusInput">
-            <view
-              v-for="i in 6"
-              :key="i"
-              class="char-box"
-              :class="{ active: inputRoomId.length === i - 1 && isInputFocused, filled: inputRoomId.length >= i }"
-            >
-              {{ inputRoomId[i - 1] || '' }}
-            </view>
-          </view>
-        </view>
-        <HapticButton
-          type="primary"
-          class="join-btn"
-          custom-style="width: 100%; height: 56px; margin-bottom: 24px;"
-          :disabled="inputRoomId.length !== 6"
-          @click="joinRoom"
-        >
-          <text class="btn-text" style="font-size: 16px; font-weight: 800; letter-spacing: 2px;">加入对局</text>
-        </HapticButton>
-      </view>
+      <HapticButton
+        type="primary"
+        custom-style="width: 100%; height: 56px; margin-bottom: 24px;"
+        @click="openJoinModal"
+      >
+        <text class="btn-text" style="font-size: 16px; font-weight: 800; letter-spacing: 2px;">输入房间号加入</text>
+      </HapticButton>
 
       <view class="divider">
         <text class="line" />
@@ -57,6 +31,51 @@
       >
         <text class="btn-text" style="font-size: 16px; font-weight: 800;">创建新对局</text>
       </HapticButton>
+    </view>
+
+    <!-- 加入房间弹窗 -->
+    <view v-if="showJoinModal" class="join-modal" @click="showJoinModal = false">
+      <view class="modal-content" @click.stop>
+        <view class="modal-header">
+          <text class="modal-title">加入对局</text>
+          <view class="close-btn" @click="showJoinModal = false">
+            ×
+          </view>
+        </view>
+        <view class="join-room">
+          <text class="label">请输入对应的纯数字房间号</text>
+          <view class="room-input-container">
+            <input
+              v-model="inputRoomId"
+              class="hidden-input"
+              type="number"
+              :maxlength="6"
+              :focus="isInputFocused"
+              @blur="isInputFocused = false"
+              @input="onInputRoomId"
+            >
+            <view class="fake-input-row" @click="focusInput">
+              <view
+                v-for="i in 6"
+                :key="i"
+                class="char-box"
+                :class="{ active: inputRoomId.length === i - 1 && isInputFocused, filled: inputRoomId.length >= i }"
+              >
+                {{ inputRoomId[i - 1] || '' }}
+              </view>
+            </view>
+          </view>
+          <HapticButton
+            type="primary"
+            class="join-btn"
+            custom-style="width: 100%; height: 56px;"
+            :disabled="inputRoomId.length !== 6"
+            @click="joinRoom"
+          >
+            <text class="btn-text" style="font-size: 16px; font-weight: 800; letter-spacing: 2px;">确认加入</text>
+          </HapticButton>
+        </view>
+      </view>
     </view>
   </view>
 </template>
@@ -77,13 +96,21 @@ definePage({
 
 const inputRoomId = ref('')
 const isInputFocused = ref(false)
+const showJoinModal = ref(false)
+
+function openJoinModal() {
+  showJoinModal.value = true
+  setTimeout(() => {
+    isInputFocused.value = true
+  }, 100)
+}
 
 function focusInput() {
   isInputFocused.value = true
 }
 
 function onInputRoomId(e: any) {
-  inputRoomId.value = e.detail.value.toUpperCase()
+  inputRoomId.value = e.detail.value.replace(/\D/g, '').substring(0, 6)
 }
 
 function joinRoom() {
@@ -235,6 +262,62 @@ function createRoom() {
     font-size: 14px;
     font-weight: 800;
     color: var(--color-text-secondary);
+  }
+}
+
+.join-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 320px;
+  background: #fdfbf7;
+  border: 4px solid var(--color-border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 8px 8px 0px 0px var(--color-border);
+  display: flex;
+  flex-direction: column;
+
+  .modal-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .close-btn {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--color-text-secondary);
+      line-height: 0.8;
+      padding: 0 4px;
+    }
+  }
+
+  .label {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--color-text-secondary);
+    margin-bottom: 16px;
+    display: block;
+    text-align: center;
   }
 }
 </style>

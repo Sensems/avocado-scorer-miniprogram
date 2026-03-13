@@ -1,153 +1,183 @@
 <template>
   <view class="scoring-board">
-    <!-- 1x4 紧凑卡片阵列 -->
-    <view class="players-grid">
-      <view
-        v-for="player in store.players"
-        :key="player.id"
-        class="player-card"
-        :class="{
-          'active': store.activeTargetId === player.id,
-          'is-me': player.id === store.localOperatorId,
-        }"
-        @click="selectPlayer(player.id)"
-      >
-        <view class="card-inner">
-          <view class="p-header">
-            <view class="avatar-sm">
-              {{ player.name.slice(0, 1) }}
-            </view>
-            <view class="name">
-              {{ player.isVirtual ? '[替]' : '' }}{{ player.name }}
-            </view>
-          </view>
-          <view class="score-display" :class="{ positive: player.score > 0, negative: player.score < 0 }">
-            <text v-if="player.score > 0" class="sign">+</text>
-            <NumberScroller :value="player.score" :height="28" class="scroller" />
-          </view>
+    <!-- Custom Header -->
+    <view class="custom-header" :style="{ paddingTop: `${statusBarHeight}px` }">
+      <view class="capsule-wrapper">
+        <view class="capsule-btn" @click="leaveRoom">
+          <text class="icon">🚶</text>
+        </view>
+        <view class="capsule-divider" />
+        <view class="capsule-btn" @click="openSettings">
+          <text class="icon">⚙️</text>
         </view>
       </view>
+      <view class="header-title">
+        房间
+      </view>
+      <view class="capsule-wrapper placeholder" />
     </view>
 
-    <!-- 操作流水区 (可滚动放大) -->
-    <scroll-view class="log-scroll-area" scroll-y>
-      <view class="log-list">
+    <!-- 弹性横向滚动阵列 -->
+    <scroll-view class="players-grid-scroll" scroll-x :show-scrollbar="false">
+      <view class="players-track">
         <view
-          v-for="log in store.historyStack.slice().reverse()"
-          :key="log.id"
-          class="log-item"
+          v-for="player in store.players"
+          :key="player.id"
+          class="player-card"
+          :class="{
+            'active': store.activeTargetId === player.id,
+            'is-me': player.id === store.localOperatorId,
+          }"
+          @click="selectPlayer(player.id)"
         >
-          <view class="log-content">
-            <text class="time">{{ new Date(log.timestamp).toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) }}</text>
-            <text class="detail">{{ log.toName }} 收 {{ log.fromName }}</text>
-            <text class="amount highlight" :class="{ positive: log.amount > 0 }">{{ log.amount > 0 ? '+' : '' }}{{ log.amount }}</text>
+          <view class="card-inner">
+            <view class="p-header">
+              <view class="avatar-sm">
+                {{ player.name.slice(0, 1) }}
+              </view>
+              <view class="name">
+                {{ player.isVirtual ? '[替]' : '' }}{{ player.name }}
+              </view>
+            </view>
+            <view class="score-display" :class="{ positive: player.score > 0, negative: player.score < 0 }">
+              <text v-if="player.score > 0" class="sign">+</text>
+              <NumberScroller :value="player.score" :height="28" class="scroller" />
+            </view>
           </view>
-          <view v-if="log.id === store.lastScoreLog?.id" class="undo-btn" @click.stop="undo">
-            撤销
-          </view>
-        </view>
-        <view v-if="store.historyStack.length === 0" class="empty-hint">
-          暂无记分记录
         </view>
       </view>
     </scroll-view>
 
-    <!-- 收银台输入区 (分段式半屏) -->
-    <view class="console-area" :class="{ 'is-expanded': isConsoleExpanded }">
-      <!-- 拖拽拉手区，点击即可触发展开 -->
-      <view class="drag-handle-wrapper" @click="toggleConsole">
-        <view class="drag-handle" />
-      </view>
-
-      <view class="input-preview" @click="!isConsoleExpanded && toggleConsole()">
-        <view class="target-hint">
-          <template v-if="!store.activeTargetId">
-            <text class="text-gray-500">点选上方玩家卡片</text>
-          </template>
-          <template v-else>
-            对 <text class="highlight">[{{ currentTargetName }}]</text> 收付
-          </template>
-        </view>
-        <view class="amount-val">
-          {{ currentInput || '...' }}
-        </view>
-      </view>
-
-      <view class="console-body-wrapper" :class="{ 'is-expanded': isConsoleExpanded }">
-        <view class="console-body">
-          <!-- 快捷筹码 -->
-          <view class="chips-row">
-            <HapticButton class="chip-btn" custom-style="flex:1; margin-right:8px" @click="addInput('10')">
-              +10
-            </HapticButton>
-            <HapticButton class="chip-btn" custom-style="flex:1; margin-right:8px" @click="addInput('50')">
-              +50
-            </HapticButton>
-            <HapticButton class="chip-btn" custom-style="flex:1" @click="addInput('100')">
-              +100
-            </HapticButton>
+    <!-- 操作流水区 (带框线优化设计) -->
+    <view class="log-box-wrapper">
+      <view class="log-box-inner">
+        <scroll-view class="log-scroll-area" scroll-y>
+          <view class="log-list">
+            <view
+              v-for="log in store.historyStack.slice().reverse()"
+              :key="log.id"
+              class="log-item"
+            >
+              <view class="log-content">
+                <text class="time">{{ new Date(log.timestamp).toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) }}</text>
+                <text class="detail">{{ log.toName }} 收 {{ log.fromName }}</text>
+                <text class="amount highlight" :class="{ positive: log.amount > 0 }">{{ log.amount > 0 ? '+' : '' }}{{ log.amount }}</text>
+              </view>
+              <view v-if="log.id === store.lastScoreLog?.id" class="undo-btn" @click.stop="undo">
+                撤销
+              </view>
+            </view>
+            <view v-if="store.historyStack.length === 0" class="empty-hint">
+              暂无记分记录
+            </view>
           </view>
-
-          <!-- 4x4 Numpad -->
-          <view class="numpad-grid">
-            <HapticButton class="num-btn" @click="appendNum('1')">
-              1
-            </HapticButton>
-            <HapticButton class="num-btn" @click="appendNum('2')">
-              2
-            </HapticButton>
-            <HapticButton class="num-btn" @click="appendNum('3')">
-              3
-            </HapticButton>
-            <HapticButton class="act-btn btn-win" @click="confirmScore(true)">
-              我收 TA
-            </HapticButton>
-
-            <HapticButton class="num-btn" @click="appendNum('4')">
-              4
-            </HapticButton>
-            <HapticButton class="num-btn" @click="appendNum('5')">
-              5
-            </HapticButton>
-            <HapticButton class="num-btn" @click="appendNum('6')">
-              6
-            </HapticButton>
-            <HapticButton class="act-btn btn-lose" @click="confirmScore(false)">
-              我付 TA
-            </HapticButton>
-
-            <HapticButton class="num-btn" @click="appendNum('7')">
-              7
-            </HapticButton>
-            <HapticButton class="num-btn" @click="appendNum('8')">
-              8
-            </HapticButton>
-            <HapticButton class="num-btn" @click="appendNum('9')">
-              9
-            </HapticButton>
-            <HapticButton class="act-btn btn-allin" @click="confirmAllIn">
-              🌊 全收
-            </HapticButton>
-
-            <HapticButton class="num-btn btn-c" @click="clearInput">
-              C
-            </HapticButton>
-            <HapticButton class="num-btn" @click="appendNum('0')">
-              0
-            </HapticButton>
-            <HapticButton class="num-btn" @click="backspaceInput">
-              ⌫
-            </HapticButton>
-            <HapticButton class="act-btn btn-end" @click="endGame">
-              结束对局
-            </HapticButton>
-          </view>
-        </view>
+        </scroll-view>
       </view>
     </view>
 
-    <!-- 背景遮罩 -->
-    <view v-if="isConsoleExpanded" class="console-mask" @click="isConsoleExpanded = false" />
+    <!-- Skyline Draggable Sheet -->
+    <!-- #ifdef MP-WEIXIN -->
+    <draggable-sheet
+      class="bottom-sheet"
+      :initial-child-size="0.22"
+      :min-child-size="0.22"
+      :max-child-size="0.75"
+      :snap="true"
+    >
+      <scroll-view class="sheet-scroll" scroll-y type="list" :show-scrollbar="false">
+        <view class="console-area">
+          <!-- 拖拽拉手区 -->
+          <view class="drag-handle-wrapper">
+            <view class="drag-handle" />
+          </view>
+
+          <view class="input-preview">
+            <view class="target-hint">
+              <template v-if="!store.activeTargetId">
+                <text class="text-gray-500">点选上方玩家卡片</text>
+              </template>
+              <template v-else>
+                对 <text class="highlight">[{{ currentTargetName }}]</text> 收付
+              </template>
+            </view>
+            <view class="amount-val">
+              {{ currentInput || '...' }}
+            </view>
+          </view>
+
+          <view class="console-body">
+            <!-- 快捷筹码 -->
+            <view class="chips-row">
+              <HapticButton class="chip-btn" custom-style="flex:1; margin-right:8px" @click="addInput('10')">
+                +10
+              </HapticButton>
+              <HapticButton class="chip-btn" custom-style="flex:1; margin-right:8px" @click="addInput('50')">
+                +50
+              </HapticButton>
+              <HapticButton class="chip-btn" custom-style="flex:1" @click="addInput('100')">
+                +100
+              </HapticButton>
+            </view>
+
+            <!-- 4x4 Numpad -->
+            <view class="numpad-grid">
+              <HapticButton class="num-btn" @click="appendNum('1')">
+                1
+              </HapticButton>
+              <HapticButton class="num-btn" @click="appendNum('2')">
+                2
+              </HapticButton>
+              <HapticButton class="num-btn" @click="appendNum('3')">
+                3
+              </HapticButton>
+              <HapticButton class="act-btn btn-win" @click="confirmScore(true)">
+                我收 TA
+              </HapticButton>
+
+              <HapticButton class="num-btn" @click="appendNum('4')">
+                4
+              </HapticButton>
+              <HapticButton class="num-btn" @click="appendNum('5')">
+                5
+              </HapticButton>
+              <HapticButton class="num-btn" @click="appendNum('6')">
+                6
+              </HapticButton>
+              <HapticButton class="act-btn btn-lose" @click="confirmScore(false)">
+                我付 TA
+              </HapticButton>
+
+              <HapticButton class="num-btn" @click="appendNum('7')">
+                7
+              </HapticButton>
+              <HapticButton class="num-btn" @click="appendNum('8')">
+                8
+              </HapticButton>
+              <HapticButton class="num-btn" @click="appendNum('9')">
+                9
+              </HapticButton>
+              <HapticButton class="act-btn btn-allin" @click="confirmAllIn">
+                🌊 全收
+              </HapticButton>
+
+              <HapticButton class="num-btn btn-c" @click="clearInput">
+                C
+              </HapticButton>
+              <HapticButton class="num-btn" @click="appendNum('0')">
+                0
+              </HapticButton>
+              <HapticButton class="num-btn" @click="backspaceInput">
+                ⌫
+              </HapticButton>
+              <HapticButton class="act-btn btn-end" @click="endGame">
+                结束对局
+              </HapticButton>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </draggable-sheet>
+    <!-- #endif -->
   </view>
 </template>
 
@@ -171,15 +201,22 @@ definePage({
 
 const store = useScoringStore()
 const currentInput = ref('')
-const isConsoleExpanded = ref(false)
+
+// 获取系统信息，用于自定义状态栏留空
+const systemInfo = uni.getSystemInfoSync()
+const statusBarHeight = ref(systemInfo.statusBarHeight || 44)
 
 const currentTargetName = computed(() => {
   const target = store.players.find((p: any) => p.id === store.activeTargetId)
   return target ? target.name : ''
 })
 
-function toggleConsole() {
-  isConsoleExpanded.value = !isConsoleExpanded.value
+function leaveRoom() {
+  uni.navigateBack()
+}
+
+function openSettings() {
+  uni.showToast({ title: '设置功能开发中', icon: 'none' })
 }
 
 function selectPlayer(id: string) {
@@ -276,16 +313,69 @@ function endGame() {
   position: relative;
 }
 
-.players-grid {
+.custom-header {
   display: flex;
-  gap: 8px;
-  padding: 16px 12px 12px;
-  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px 12px;
+  background-color: transparent;
+  z-index: 50;
+
+  .capsule-wrapper {
+    display: flex;
+    align-items: center;
+    background: rgba(253, 251, 247, 0.9);
+    border-radius: 32px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 6px 14px;
+    width: 86px;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+    &.placeholder {
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+
+  .capsule-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    .icon {
+      font-size: 18px;
+    }
+  }
+
+  .capsule-divider {
+    width: 1px;
+    height: 16px;
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  .header-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--color-text-primary);
+  }
+}
+
+.players-grid-scroll {
   width: 100%;
+  white-space: nowrap;
+  padding-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.players-track {
+  display: inline-flex;
+  gap: 12px;
+  padding: 0 16px;
 }
 
 .player-card {
-  flex: 1;
+  width: 120px;
+  flex-shrink: 0;
   background: #fdfbf7;
   border-radius: 12px;
   position: relative;
@@ -382,10 +472,29 @@ function endGame() {
   }
 }
 
+.log-box-wrapper {
+  flex: 1;
+  padding: 12px 16px 20vh; /* 留出底部 Skyline Sheet 空间 */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.log-box-inner {
+  flex: 1;
+  background: #fdfbf7;
+  border-radius: 16px;
+  border: 4px solid var(--color-border);
+  box-shadow: 6px 6px 0px 0px var(--color-border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .log-scroll-area {
   flex: 1;
-  padding: 0 16px;
-  overflow: hidden;
+  padding: 12px;
+  height: 100%;
 }
 
 .log-list {
@@ -399,11 +508,11 @@ function endGame() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fdfbf7;
+  background: #fff;
   border: 3px solid var(--color-border);
   padding: 12px 16px;
   border-radius: 12px;
-  box-shadow: 3px 3px 0px 0px var(--color-border);
+  box-shadow: 2px 2px 0px 0px var(--color-border);
 
   .log-content {
     display: flex;
@@ -455,19 +564,30 @@ function endGame() {
   color: var(--color-text-secondary);
 }
 
-.console-area {
+.bottom-sheet {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  background: #fdfbf7;
-  padding: 0 20px calc(24px + env(safe-area-inset-bottom));
-  border-top: 4px solid var(--color-border);
-  border-radius: 24px 24px 0 0;
-  box-shadow: 0 -8px 0px -4px var(--color-border);
   z-index: 100;
+}
+
+.sheet-scroll {
+  width: 100%;
+  height: 100%;
+  background: #f1ede1; /* 稍有区分度的背景 */
+  border-radius: 24px 24px 0 0;
+  border-top: 4px solid var(--color-border);
+  box-shadow: 0 -8px 0px -4px var(--color-border);
+  box-sizing: border-box;
+}
+
+.console-area {
+  padding: 0 20px calc(24px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .drag-handle-wrapper {
@@ -515,18 +635,9 @@ function endGame() {
   }
 }
 
-.console-body-wrapper {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.3s cubic-bezier(0.175, 0.885, 0.32, 1);
-
-  &.is-expanded {
-    grid-template-rows: 1fr;
-  }
-}
-
 .console-body {
-  overflow: hidden;
+  overflow: visible;
+  padding-bottom: 24px;
 }
 
 .chips-row {
@@ -596,15 +707,5 @@ function endGame() {
   background: #ebe5e0 !important;
   color: var(--color-text-primary) !important;
   font-size: 14px !important;
-}
-
-.console-mask {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 90;
 }
 </style>
