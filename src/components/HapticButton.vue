@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineEmits, defineProps } from 'vue'
+// Vue3 setup script automatically exposes props and emits macros
 
 const props = defineProps({
   type: {
@@ -53,41 +53,50 @@ function handleClick(e: Event) {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  border-radius: 12px;
-  background-color: #2a2a2a;
+  border-radius: 8px;
+  border: 4px solid var(--color-border);
+  background-color: #fdfbf7;
   color: var(--color-text-primary);
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 800; // Bold typography for neo-brutalism
   cursor: pointer;
-  transition: all 0.1s ease;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    background-color 150ms ease;
   padding: 12px 24px;
   margin: 0;
   box-sizing: border-box;
+  box-shadow: 4px 4px 0px 0px var(--color-border);
+  position: relative; // For better z-index management
 
   &::after {
-    border: none;
+    display: none; // Remove default uniapp button pseudo element
   }
 
   &.primary {
     background-color: var(--color-primary);
-    color: #1e1e1e;
-    box-shadow: 0 4px 16px rgba(138, 154, 91, 0.3);
+    color: #fdfbf7; // Light color for contrast with the avocado green
   }
 
   &.danger {
     background-color: var(--color-danger);
-    color: #fff;
+    color: #fdfbf7;
   }
 
   &.disabled {
-    opacity: 0.5;
+    opacity: 0.6;
+    background-color: #d9d2c5 !important;
+    border-color: #8e8276 !important;
+    box-shadow: none !important;
+    color: #8e8276 !important;
     cursor: not-allowed;
+    transform: none !important;
   }
 }
 
 .haptic-btn-hover {
-  transform: scale(0.96);
-  opacity: 0.8 !important;
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px 0px var(--color-border) !important;
 }
 </style>

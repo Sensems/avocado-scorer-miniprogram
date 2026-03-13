@@ -27,19 +27,30 @@ onHide(() => {
 <style lang="scss">
 :root,
 page {
-  --bg-dark: #1e1e1e;
+  --bg-base: #fdfbf7;
   --color-primary: #8a9a5b;
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #999999;
+  --color-text-primary: #2d1e12;
+  --color-text-secondary: #8e8276;
+  --color-border: #2d1e12;
   --color-danger: #ea5455;
   --color-warning: #ff9f43;
 }
 
 page,
 body {
-  background-color: var(--bg-dark);
+  background-color: var(--bg-base);
   color: var(--color-text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    'Outfit',
+    'Satoshi',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Inter',
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
   height: 100vh;
 }
 </style>

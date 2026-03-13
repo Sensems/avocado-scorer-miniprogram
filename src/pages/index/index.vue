@@ -30,6 +30,7 @@
           v-for="(player, index) in maxPlayers"
           :key="index"
           class="player-seat"
+          :class="{ 'is-empty': !store.players[index] }"
         >
           <template v-if="store.players[index]">
             <view class="avatar-filled" :class="{ virtual: store.players[index].isVirtual }">
@@ -129,10 +130,7 @@ onShareAppMessage(() => {
 <style lang="scss" scoped>
 .lobby-container {
   min-height: 100vh;
-  background-color: #0f1115; /* 极深邃底色 */
-  background-image:
-    radial-gradient(circle at 15% 50%, rgba(138, 154, 91, 0.08), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(124, 58, 237, 0.05), transparent 25%);
+  background-color: var(--bg-base);
   color: var(--color-text-primary);
   display: flex;
   flex-direction: column;
@@ -155,19 +153,21 @@ onShareAppMessage(() => {
       system-ui,
       -apple-system,
       sans-serif;
-    color: transparent;
-    background-image: linear-gradient(135deg, #b5c58a 0%, #8a9a5b 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
+    color: var(--color-text-primary);
     margin-bottom: 8px;
     letter-spacing: -0.5px;
-    text-shadow: 0 4px 24px rgba(138, 154, 91, 0.2);
+    text-shadow: 4px 4px 0px var(--color-primary);
+    border: 4px solid var(--color-border);
+    padding: 12px 24px;
+    border-radius: 12px;
+    background: #fdfbf7;
+    box-shadow: 6px 6px 0px 0px var(--color-border);
   }
 
   .subtitle {
     font-size: 15px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.5);
+    font-weight: 800;
+    color: var(--color-text-secondary);
     letter-spacing: 4px;
     text-transform: uppercase;
   }
@@ -184,29 +184,11 @@ onShareAppMessage(() => {
 .main-btn {
   width: 260px;
   height: 64px;
-  border-radius: 32px;
-  position: relative;
-  overflow: hidden;
-  box-shadow:
-    0 12px 32px -8px rgba(138, 154, 91, 0.5),
-    inset 0 1px 1px rgba(255, 255, 255, 0.3);
-
-  /* 按钮内发光特效点缀 */
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
-    border-radius: inherit;
-    pointer-events: none;
-  }
+  /* Other styles inherited from HapticButton primary */
 
   .btn-text {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 2px;
     position: relative;
     z-index: 2;
@@ -223,44 +205,35 @@ onShareAppMessage(() => {
 
 .room-id {
   font-size: 16px;
-  color: #fff;
+  font-weight: 800;
+  color: var(--color-text-primary);
   margin-bottom: 24px;
   font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--bg-base);
+  border: 4px solid var(--color-border);
   padding: 8px 20px;
-  border-radius: 100px;
+  border-radius: 12px;
   letter-spacing: 2px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 4px 4px 0px 0px var(--color-border);
 }
 
 .qr-placeholder {
   width: 160px;
   height: 160px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 20px;
+  background: var(--bg-base);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 40px;
-  border: 1px dashed rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
+  border: 4px solid var(--color-border);
+  box-shadow: 6px 6px 0px 0px var(--color-border);
   position: relative;
 
-  &::after {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    background: linear-gradient(135deg, rgba(138, 154, 91, 0.2), transparent, transparent, rgba(138, 154, 91, 0.2));
-    border-radius: 22px;
-    z-index: -1;
-  }
-
   .qr-text {
-    color: rgba(255, 255, 255, 0.4);
-    font-weight: 600;
-    font-size: 14px;
+    color: var(--color-text-secondary);
+    font-weight: 800;
+    font-size: 16px;
     letter-spacing: 1px;
   }
 }
@@ -274,68 +247,71 @@ onShareAppMessage(() => {
 }
 
 .player-seat {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 24px;
+  background: var(--bg-base);
+  border-radius: 12px;
   height: 110px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border: 4px solid var(--color-border);
+  box-shadow: 6px 6px 0px 0px var(--color-border);
+
+  &.is-empty {
+    border: 4px dashed var(--color-border);
+    box-shadow: none;
+    background: transparent;
+  }
 }
 
 .avatar-filled {
   width: 44px;
   height: 44px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #b5c58a, #8a9a5b);
-  color: #0f1115;
+  border-radius: 12px;
+  background: var(--color-primary);
+  color: #fdfbf7;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
   font-weight: 800;
   margin-bottom: 10px;
-  box-shadow: 0 4px 12px rgba(138, 154, 91, 0.3);
+  border: 2px solid var(--color-border);
+  box-shadow: 2px 2px 0px 0px var(--color-border);
 
   &.virtual {
-    background: rgba(138, 154, 91, 0.1);
-    border: 1.5px dashed rgba(138, 154, 91, 0.6);
-    color: #8a9a5b;
+    background: transparent;
+    border: 2px dashed var(--color-border);
+    color: var(--color-text-secondary);
     box-shadow: none;
   }
 }
 
 .name {
   font-size: 14px;
-  font-weight: 600;
-  color: #e2e8f0;
+  font-weight: 800;
+  color: var(--color-text-primary);
 }
 
 .seat-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: rgba(255, 255, 255, 0.3);
-  transition: color 0.2s ease;
+  color: var(--color-text-secondary);
 
   &:active {
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--color-text-primary);
   }
 
   .plus {
     font-size: 28px;
-    font-weight: 300;
+    font-weight: 800;
     margin-bottom: 6px;
     line-height: 1;
   }
   .hint {
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 800;
     letter-spacing: 0.5px;
   }
 }
