@@ -1,6 +1,6 @@
 <template>
   <view class="scoring-board">
-    <!-- 2x2 胖卡片阵列 -->
+    <!-- 1x4 紧凑卡片阵列 -->
     <view class="players-grid">
       <view
         v-for="player in store.players"
@@ -23,28 +23,43 @@
           </view>
           <view class="score-display" :class="{ positive: player.score > 0, negative: player.score < 0 }">
             <text v-if="player.score > 0" class="sign">+</text>
-            <NumberScroller :value="player.score" :height="36" class="scroller" />
+            <NumberScroller :value="player.score" :height="28" class="scroller" />
           </view>
         </view>
       </view>
     </view>
 
-    <!-- 操作流水区 -->
-    <view class="action-bar">
-      <view v-if="store.lastScoreLog" class="log-bubble">
-        <text class="log-text">刚结: {{ store.lastScoreLog.toName }} 收 {{ store.lastScoreLog.fromName }} {{ store.lastScoreLog.amount }}</text>
+    <!-- 操作流水区 (可滚动放大) -->
+    <scroll-view class="log-scroll-area" scroll-y>
+      <view class="log-list">
+        <view
+          v-for="log in store.historyStack.slice().reverse()"
+          :key="log.id"
+          class="log-item"
+        >
+          <view class="log-content">
+            <text class="time">{{ new Date(log.timestamp).toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) }}</text>
+            <text class="detail">{{ log.toName }} 收 {{ log.fromName }}</text>
+            <text class="amount highlight" :class="{ positive: log.amount > 0 }">{{ log.amount > 0 ? '+' : '' }}{{ log.amount }}</text>
+          </view>
+          <view v-if="log.id === store.lastScoreLog?.id" class="undo-btn" @click.stop="undo">
+            撤销
+          </view>
+        </view>
+        <view v-if="store.historyStack.length === 0" class="empty-hint">
+          暂无记分记录
+        </view>
       </view>
-      <view v-else class="log-bubble empty">
-        <text class="log-text">暂无记分记录</text>
-      </view>
-      <HapticButton type="danger" custom-style="padding: 6px 12px; font-size: 14px; border-radius: 20px;" :disabled="!store.lastScoreLog" @click="undo">
-        ⌫ 撤销
-      </HapticButton>
-    </view>
+    </scroll-view>
 
-    <!-- 收银台输入区 -->
-    <view class="console-area">
-      <view class="input-preview">
+    <!-- 收银台输入区 (分段式半屏) -->
+    <view class="console-area" :class="{ 'is-expanded': isConsoleExpanded }">
+      <!-- 拖拽拉手区，点击即可触发展开 -->
+      <view class="drag-handle-wrapper" @click="toggleConsole">
+        <view class="drag-handle" />
+      </view>
+
+      <view class="input-preview" @click="!isConsoleExpanded && toggleConsole()">
         <view class="target-hint">
           <template v-if="!store.activeTargetId">
             <text class="text-gray-500">点选上方玩家卡片</text>
@@ -58,74 +73,81 @@
         </view>
       </view>
 
-      <!-- 快捷筹码 -->
-      <view class="chips-row">
-        <HapticButton class="chip-btn" custom-style="flex:1; margin-right:8px" @click="addInput('10')">
-          +10
-        </HapticButton>
-        <HapticButton class="chip-btn" custom-style="flex:1; margin-right:8px" @click="addInput('50')">
-          +50
-        </HapticButton>
-        <HapticButton class="chip-btn" custom-style="flex:1" @click="addInput('100')">
-          +100
-        </HapticButton>
-      </view>
+      <view class="console-body-wrapper" :class="{ 'is-expanded': isConsoleExpanded }">
+        <view class="console-body">
+          <!-- 快捷筹码 -->
+          <view class="chips-row">
+            <HapticButton class="chip-btn" custom-style="flex:1; margin-right:8px" @click="addInput('10')">
+              +10
+            </HapticButton>
+            <HapticButton class="chip-btn" custom-style="flex:1; margin-right:8px" @click="addInput('50')">
+              +50
+            </HapticButton>
+            <HapticButton class="chip-btn" custom-style="flex:1" @click="addInput('100')">
+              +100
+            </HapticButton>
+          </view>
 
-      <!-- 4x4 Numpad -->
-      <view class="numpad-grid">
-        <HapticButton class="num-btn" @click="appendNum('1')">
-          1
-        </HapticButton>
-        <HapticButton class="num-btn" @click="appendNum('2')">
-          2
-        </HapticButton>
-        <HapticButton class="num-btn" @click="appendNum('3')">
-          3
-        </HapticButton>
-        <HapticButton class="act-btn btn-win" @click="confirmScore(true)">
-          我收 TA
-        </HapticButton>
+          <!-- 4x4 Numpad -->
+          <view class="numpad-grid">
+            <HapticButton class="num-btn" @click="appendNum('1')">
+              1
+            </HapticButton>
+            <HapticButton class="num-btn" @click="appendNum('2')">
+              2
+            </HapticButton>
+            <HapticButton class="num-btn" @click="appendNum('3')">
+              3
+            </HapticButton>
+            <HapticButton class="act-btn btn-win" @click="confirmScore(true)">
+              我收 TA
+            </HapticButton>
 
-        <HapticButton class="num-btn" @click="appendNum('4')">
-          4
-        </HapticButton>
-        <HapticButton class="num-btn" @click="appendNum('5')">
-          5
-        </HapticButton>
-        <HapticButton class="num-btn" @click="appendNum('6')">
-          6
-        </HapticButton>
-        <HapticButton class="act-btn btn-lose" @click="confirmScore(false)">
-          我付 TA
-        </HapticButton>
+            <HapticButton class="num-btn" @click="appendNum('4')">
+              4
+            </HapticButton>
+            <HapticButton class="num-btn" @click="appendNum('5')">
+              5
+            </HapticButton>
+            <HapticButton class="num-btn" @click="appendNum('6')">
+              6
+            </HapticButton>
+            <HapticButton class="act-btn btn-lose" @click="confirmScore(false)">
+              我付 TA
+            </HapticButton>
 
-        <HapticButton class="num-btn" @click="appendNum('7')">
-          7
-        </HapticButton>
-        <HapticButton class="num-btn" @click="appendNum('8')">
-          8
-        </HapticButton>
-        <HapticButton class="num-btn" @click="appendNum('9')">
-          9
-        </HapticButton>
-        <HapticButton class="act-btn btn-allin" @click="confirmAllIn">
-          🌊 全收
-        </HapticButton>
+            <HapticButton class="num-btn" @click="appendNum('7')">
+              7
+            </HapticButton>
+            <HapticButton class="num-btn" @click="appendNum('8')">
+              8
+            </HapticButton>
+            <HapticButton class="num-btn" @click="appendNum('9')">
+              9
+            </HapticButton>
+            <HapticButton class="act-btn btn-allin" @click="confirmAllIn">
+              🌊 全收
+            </HapticButton>
 
-        <HapticButton class="num-btn btn-c" @click="clearInput">
-          C
-        </HapticButton>
-        <HapticButton class="num-btn" @click="appendNum('0')">
-          0
-        </HapticButton>
-        <HapticButton class="num-btn" @click="backspaceInput">
-          ⌫
-        </HapticButton>
-        <HapticButton class="act-btn btn-end" @click="endGame">
-          结束对局
-        </HapticButton>
+            <HapticButton class="num-btn btn-c" @click="clearInput">
+              C
+            </HapticButton>
+            <HapticButton class="num-btn" @click="appendNum('0')">
+              0
+            </HapticButton>
+            <HapticButton class="num-btn" @click="backspaceInput">
+              ⌫
+            </HapticButton>
+            <HapticButton class="act-btn btn-end" @click="endGame">
+              结束对局
+            </HapticButton>
+          </view>
+        </view>
       </view>
     </view>
+
+    <!-- 背景遮罩 -->
+    <view v-if="isConsoleExpanded" class="console-mask" @click="isConsoleExpanded = false" />
   </view>
 </template>
 
@@ -149,14 +171,18 @@ definePage({
 
 const store = useScoringStore()
 const currentInput = ref('')
+const isConsoleExpanded = ref(false)
 
 const currentTargetName = computed(() => {
   const target = store.players.find((p: any) => p.id === store.activeTargetId)
   return target ? target.name : ''
 })
 
+function toggleConsole() {
+  isConsoleExpanded.value = !isConsoleExpanded.value
+}
+
 function selectPlayer(id: string) {
-  // 自己不作为独立被选择锚点，但为了一收多或UI演示可以点自身
   if (id === store.localOperatorId) {
     store.setActiveTarget(id)
     return
@@ -166,7 +192,7 @@ function selectPlayer(id: string) {
 
 function appendNum(n: string) {
   if (currentInput.value.length > 5)
-    return // 防止数字过大溢出
+    return
   if (currentInput.value === '0')
     currentInput.value = n
   else currentInput.value += n
@@ -199,16 +225,15 @@ function confirmScore(iAmReceiver: boolean) {
   }
 
   if (iAmReceiver) {
-    // 我收 TA
     store.addScore(store.activeTargetId, store.localOperatorId, val)
   }
   else {
-    // 我付 TA
     store.addScore(store.localOperatorId, store.activeTargetId, val)
   }
 
+  uni.vibrateShort({ success: () => console.log('vibrate success') })
   currentInput.value = ''
-  // 保持焦点，方便连刷
+  // 收满后不收起展开面板，连续操作
 }
 
 function confirmAllIn() {
@@ -218,10 +243,9 @@ function confirmAllIn() {
     return
   }
 
-  // 默认由“我”或选定的人全收
   const winnerId = store.activeTargetId || store.localOperatorId
   store.allIn(winnerId, baseAmount)
-
+  uni.vibrateShort({ success: () => console.log('vibrate success') })
   currentInput.value = ''
 }
 
@@ -237,7 +261,6 @@ function endGame() {
     }, 1500)
     return
   }
-  // 跳转战报海报页
   uni.navigateTo({ url: '/pages/report/index' })
 }
 </script>
@@ -250,51 +273,51 @@ function endGame() {
   background-color: var(--bg-base);
   color: var(--color-text-primary);
   overflow: hidden;
+  position: relative;
 }
 
 .players-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 16px;
-  padding: 16px 20px;
-  flex: 1; /* 撑满上半部 */
-  max-height: 48vh;
+  display: flex;
+  gap: 8px;
+  padding: 16px 12px 12px;
+  flex-shrink: 0;
+  width: 100%;
 }
 
 .player-card {
+  flex: 1;
   background: #fdfbf7;
   border-radius: 12px;
   position: relative;
   transition:
     transform 150ms ease,
     box-shadow 150ms ease;
-  border: 4px solid var(--color-border);
+  border: 3px solid var(--color-border);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 16px;
-  box-shadow: 4px 4px 0px 0px var(--color-border);
+  padding: 12px 6px;
+  box-shadow: 3px 3px 0px 0px var(--color-border);
 
   &.active {
-    box-shadow: 8px 8px 0px 0px var(--color-border);
+    box-shadow: 6px 6px 0px 0px var(--color-border);
     transform: translateY(-4px) scale(1.02);
+    border-color: var(--color-primary);
   }
 
   &.is-me {
     &::after {
       content: '我';
       position: absolute;
-      top: -4px;
-      right: -4px;
+      top: -3px;
+      right: -3px;
       background: var(--color-primary);
       color: #fdfbf7;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 800;
-      padding: 4px 12px;
-      border: 4px solid var(--color-border);
+      padding: 2px 8px;
+      border: 3px solid var(--color-border);
       border-radius: 0 10px 0 10px;
-      box-shadow: -2px 2px 0px var(--color-border);
     }
   }
 }
@@ -303,17 +326,18 @@ function endGame() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .p-header {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 
   .avatar-sm {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     border-radius: 8px;
     background: var(--color-primary);
     border: 3px solid var(--color-border);
@@ -323,18 +347,20 @@ function endGame() {
     font-size: 14px;
     font-weight: 800;
     color: #fdfbf7;
-    box-shadow: 2px 2px 0px var(--color-border);
   }
   .name {
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 800;
     color: var(--color-text-primary);
-    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 }
 
 .score-display {
-  font-size: 36px;
+  font-size: 24px;
   font-weight: 800;
   font-family: 'JetBrains Mono', 'Inter', system-ui;
   font-variant-numeric: tabular-nums;
@@ -350,51 +376,114 @@ function endGame() {
   }
 
   .sign {
-    font-size: 24px;
-    margin-right: 4px;
+    font-size: 16px;
+    margin-right: 2px;
     opacity: 0.8;
   }
 }
 
-.action-bar {
+.log-scroll-area {
+  flex: 1;
+  padding: 0 16px;
+  overflow: hidden;
+}
+
+.log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 24px;
+}
+
+.log-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
-  background: transparent;
-  z-index: 10;
-}
-
-.log-bubble {
   background: #fdfbf7;
-  border: 4px solid var(--color-border);
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--color-text-primary);
-  flex: 1;
-  margin-right: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  box-shadow: 4px 4px 0px 0px var(--color-border);
+  border: 3px solid var(--color-border);
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 3px 3px 0px 0px var(--color-border);
 
-  &.empty {
-    background: transparent;
-    border: 4px dashed var(--color-border);
-    color: var(--color-text-secondary);
-    box-shadow: none;
+  .log-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .time {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+    }
+    .detail {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--color-text-primary);
+    }
+    .amount {
+      font-size: 16px;
+      font-weight: 800;
+      &.positive {
+        color: var(--color-danger);
+      }
+    }
+  }
+
+  .undo-btn {
+    font-size: 13px;
+    font-weight: 800;
+    color: #fdfbf7;
+    background: var(--color-danger);
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 3px solid var(--color-border);
+    box-shadow: 2px 2px 0px 0px var(--color-border);
+
+    &:active {
+      transform: translate(2px, 2px);
+      box-shadow: 0px 0px 0px 0px var(--color-border);
+    }
   }
 }
 
+.empty-hint {
+  text-align: center;
+  padding: 40px 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--color-text-secondary);
+}
+
 .console-area {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   background: #fdfbf7;
-  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+  padding: 0 20px calc(24px + env(safe-area-inset-bottom));
   border-top: 4px solid var(--color-border);
+  border-radius: 24px 24px 0 0;
   box-shadow: 0 -8px 0px -4px var(--color-border);
-  position: relative;
-  z-index: 10;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.drag-handle-wrapper {
+  width: 100%;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.drag-handle {
+  width: 48px;
+  height: 6px;
+  background: var(--color-text-secondary);
+  border-radius: 4px;
+  opacity: 0.3;
 }
 
 .input-preview {
@@ -426,6 +515,20 @@ function endGame() {
   }
 }
 
+.console-body-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.175, 0.885, 0.32, 1);
+
+  &.is-expanded {
+    grid-template-rows: 1fr;
+  }
+}
+
+.console-body {
+  overflow: hidden;
+}
+
 .chips-row {
   display: flex;
   margin-bottom: 16px;
@@ -435,6 +538,7 @@ function endGame() {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
+  padding-bottom: 8px;
 }
 
 :deep(.num-btn) {
@@ -492,5 +596,15 @@ function endGame() {
   background: #ebe5e0 !important;
   color: var(--color-text-primary) !important;
   font-size: 14px !important;
+}
+
+.console-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 90;
 }
 </style>

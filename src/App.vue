@@ -52,5 +52,6 @@ body {
     Arial,
     sans-serif;
   height: 100vh;
+  overflow: hidden;
 }
 </style>

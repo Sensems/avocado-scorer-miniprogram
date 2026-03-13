@@ -9,64 +9,61 @@
       </view>
     </view>
 
-    <view v-if="!isRoomCreated" class="action-area">
-      <HapticButton type="primary" class="main-btn" @click="createRoom">
-        <text class="btn-text">创建对局</text>
-      </HapticButton>
-    </view>
-
-    <view v-else class="room-area">
-      <view class="room-id">
-        房间号: {{ roomId }}
-      </view>
-      <view class="qr-placeholder">
-        <view class="qr-text">
-          微信扫码入座
+    <view class="action-area">
+      <view class="join-room">
+        <text class="label">输入房间号加入</text>
+        <view class="room-input-container">
+          <input
+            v-model="inputRoomId"
+            class="hidden-input"
+            type="text"
+            maxlength="6"
+            :focus="isInputFocused"
+            @blur="isInputFocused = false"
+            @input="onInputRoomId"
+          >
+          <view class="fake-input-row" @click="focusInput">
+            <view
+              v-for="i in 6"
+              :key="i"
+              class="char-box"
+              :class="{ active: inputRoomId.length === i - 1 && isInputFocused, filled: inputRoomId.length >= i }"
+            >
+              {{ inputRoomId[i - 1] || '' }}
+            </view>
+          </view>
         </view>
-      </view>
-
-      <view class="players-grid">
-        <view
-          v-for="(player, index) in maxPlayers"
-          :key="index"
-          class="player-seat"
-          :class="{ 'is-empty': !store.players[index] }"
-        >
-          <template v-if="store.players[index]">
-            <view class="avatar-filled" :class="{ virtual: store.players[index].isVirtual }">
-              {{ store.players[index].name[0] }}
-            </view>
-            <view class="name">
-              {{ store.players[index].name }}
-            </view>
-          </template>
-          <template v-else>
-            <view class="seat-empty" @click="addVirtualPlayer(index)">
-              <text class="plus">+</text>
-              <text class="hint">添加替身</text>
-            </view>
-          </template>
-        </view>
-      </view>
-
-      <view class="start-action mt-8">
         <HapticButton
           type="primary"
-          :disabled="store.players.length < 4"
-          @click="startGame"
+          class="join-btn"
+          custom-style="width: 100%; height: 56px; margin-bottom: 24px;"
+          :disabled="inputRoomId.length !== 6"
+          @click="joinRoom"
         >
-          <text class="btn-text">{{ store.players.length < 4 ? '等待玩家入座...' : '开始对局' }}</text>
+          <text class="btn-text" style="font-size: 16px; font-weight: 800; letter-spacing: 2px;">加入对局</text>
         </HapticButton>
       </view>
+
+      <view class="divider">
+        <text class="line" />
+        <text class="text">或</text>
+        <text class="line" />
+      </view>
+
+      <HapticButton
+        class="create-btn"
+        custom-style="width: 100%; height: 56px; background: #fdfbf7; border: 4px solid var(--color-border); color: var(--color-text-primary);"
+        @click="createRoom"
+      >
+        <text class="btn-text" style="font-size: 16px; font-weight: 800;">创建新对局</text>
+      </HapticButton>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
 import { ref } from 'vue'
 import HapticButton from '@/components/HapticButton.vue'
-import { useScoringStore } from '@/store/useScoringStore'
 
 defineOptions({ name: 'Home' })
 definePage({
@@ -78,53 +75,26 @@ definePage({
   },
 })
 
-const store = useScoringStore()
-const isRoomCreated = ref(false)
-const roomId = ref('')
-const maxPlayers = 4
+const inputRoomId = ref('')
+const isInputFocused = ref(false)
 
-onLoad((options) => {
-  // 处理扫码或分享链接进入的情形
-  if (options?.roomId) {
-    roomId.value = options.roomId
-    isRoomCreated.value = true
-    // TODO: 调用接口加入房间，这里先走单机逻辑
-    store.initGame(roomId.value)
+function focusInput() {
+  isInputFocused.value = true
+}
+
+function onInputRoomId(e: any) {
+  inputRoomId.value = e.detail.value.toUpperCase()
+}
+
+function joinRoom() {
+  if (inputRoomId.value.length === 6) {
+    uni.navigateTo({ url: `/pages/room/index?roomId=${inputRoomId.value}` })
   }
-})
+}
 
 function createRoom() {
-  roomId.value = Math.random().toString(36).substring(2, 8).toUpperCase()
-  isRoomCreated.value = true
-  store.initGame(roomId.value) // 已把自己初始化进来
+  uni.navigateTo({ url: '/pages/room/index' })
 }
-
-function addVirtualPlayer(index: number) {
-  const vCount = store.players.filter(p => p.isVirtual).length + 1
-  store.addPlayer({
-    id: `virtual_${Date.now()}`,
-    name: `替身${vCount}`,
-    isVirtual: true,
-    ownerId: store.localOperatorId,
-    avatarUrl: '',
-  })
-}
-
-function startGame() {
-  if (store.players.length < 4) {
-    uni.showToast({ title: '人未齐，不可开局', icon: 'error' })
-    return
-  }
-  // 跳转到核心记分台
-  uni.navigateTo({ url: '/pages/scoring/index' })
-}
-
-onShareAppMessage(() => {
-  return {
-    title: '🀄️ 缺一门，速来落座，牛油果极速记分！',
-    path: `/pages/index/index?roomId=${roomId.value}`,
-  }
-})
 </script>
 
 <style lang="scss" scoped>
@@ -175,153 +145,96 @@ onShareAppMessage(() => {
 
 .action-area {
   width: 100%;
-  display: flex;
-  justify-content: center;
-  z-index: 10;
-  margin-top: 20vh;
-}
-
-.main-btn {
-  width: 260px;
-  height: 64px;
-  /* Other styles inherited from HapticButton primary */
-
-  .btn-text {
-    font-size: 18px;
-    font-weight: 800;
-    letter-spacing: 2px;
-    position: relative;
-    z-index: 2;
-  }
-}
-
-.room-area {
-  width: 100%;
+  max-width: 360px;
   display: flex;
   flex-direction: column;
   align-items: center;
   z-index: 10;
+  margin-top: 4vh;
 }
 
-.room-id {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--color-text-primary);
-  margin-bottom: 24px;
-  font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
-  background: var(--bg-base);
-  border: 4px solid var(--color-border);
-  padding: 8px 20px;
-  border-radius: 12px;
-  letter-spacing: 2px;
-  box-shadow: 4px 4px 0px 0px var(--color-border);
-}
-
-.qr-placeholder {
-  width: 160px;
-  height: 160px;
-  background: var(--bg-base);
-  border-radius: 12px;
+.join-room {
+  width: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 40px;
-  border: 4px solid var(--color-border);
-  box-shadow: 6px 6px 0px 0px var(--color-border);
-  position: relative;
+  background: transparent;
+  padding: 0;
 
-  .qr-text {
-    color: var(--color-text-secondary);
-    font-weight: 800;
+  .label {
     font-size: 16px;
-    letter-spacing: 1px;
-  }
-}
-
-.players-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  width: 100%;
-  max-width: 340px;
-}
-
-.player-seat {
-  background: var(--bg-base);
-  border-radius: 12px;
-  height: 110px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border: 4px solid var(--color-border);
-  box-shadow: 6px 6px 0px 0px var(--color-border);
-
-  &.is-empty {
-    border: 4px dashed var(--color-border);
-    box-shadow: none;
-    background: transparent;
-  }
-}
-
-.avatar-filled {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--color-primary);
-  color: #fdfbf7;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  font-weight: 800;
-  margin-bottom: 10px;
-  border: 2px solid var(--color-border);
-  box-shadow: 2px 2px 0px 0px var(--color-border);
-
-  &.virtual {
-    background: transparent;
-    border: 2px dashed var(--color-border);
-    color: var(--color-text-secondary);
-    box-shadow: none;
-  }
-}
-
-.name {
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--color-text-primary);
-}
-
-.seat-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: var(--color-text-secondary);
-
-  &:active {
+    font-weight: 800;
     color: var(--color-text-primary);
+    margin-bottom: 16px;
   }
 
-  .plus {
-    font-size: 28px;
-    font-weight: 800;
-    margin-bottom: 6px;
-    line-height: 1;
+  .room-input-container {
+    position: relative;
+    width: 100%;
+    margin-bottom: 24px;
   }
-  .hint {
-    font-size: 13px;
+
+  .hidden-input {
+    position: absolute;
+    top: 0;
+    left: -9999px;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .fake-input-row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .char-box {
+    width: 48px;
+    height: 60px;
+    background: #fdfbf7;
+    border: 3px solid var(--color-border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
     font-weight: 800;
-    letter-spacing: 0.5px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--color-text-primary);
+    box-shadow: 4px 4px 0px 0px var(--color-border);
+    transition: all 0.2s;
+
+    &.filled {
+      border-color: var(--color-text-primary);
+    }
+
+    &.active {
+      border-color: var(--color-primary);
+      transform: translateY(-2px);
+      box-shadow: 4px 6px 0px 0px var(--color-primary);
+    }
   }
 }
 
-.start-action {
+.divider {
+  display: flex;
+  align-items: center;
   width: 100%;
-  max-width: 340px;
+  margin: 16px 0;
 
-  .main-btn {
-    width: 100%;
+  .line {
+    flex: 1;
+    height: 3px;
+    background-color: var(--color-border);
+  }
+
+  .text {
+    margin: 0 16px;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--color-text-secondary);
   }
 }
 </style>
