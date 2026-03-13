@@ -83,7 +83,14 @@
       class="bottom-sheet" :initial-child-size="0.22" :min-child-size="0.22" :max-child-size="0.75"
       :snap="true"
     >
-      <scroll-view class="sheet-scroll" scroll-y type="list" :show-scrollbar="false">
+      <scroll-view
+        class="sheet-scroll"
+        scroll-y
+        type="list"
+        :show-scrollbar="false"
+        associative-container="draggable-sheet"
+        :bounces="true"
+      >
         <view class="console-area">
           <!-- 拖拽拉手区 -->
           <view class="drag-handle-wrapper">
@@ -514,8 +521,8 @@ function endGame() {
 .log-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding-bottom: 24px;
+  gap: 8px;
+  padding-bottom: 16px;
 }
 
 .log-item {
@@ -523,32 +530,41 @@ function endGame() {
   align-items: center;
   justify-content: space-between;
   background: #fff;
-  border: 3px solid var(--color-border);
-  padding: 12px 16px;
-  border-radius: 12px;
+  border: 2px solid var(--color-border);
+  padding: 8px 12px;
+  border-radius: 10px;
   box-shadow: 2px 2px 0px 0px var(--color-border);
+  overflow: hidden; /* 防溢出 */
 
   .log-content {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    overflow: hidden; /* 内容裁剪 */
+    flex: 1;
+    min-width: 0; /* 允许压缩 */
 
     .time {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--color-text-secondary);
       font-family: 'JetBrains Mono', monospace;
-      font-weight: 800;
+      font-weight: 700;
+      flex-shrink: 0;
     }
 
     .detail {
-      font-size: 14px;
-      font-weight: 800;
+      font-size: 13px;
+      font-weight: 700;
       color: var(--color-text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .amount {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 800;
+      flex-shrink: 0;
 
       &.positive {
         color: var(--color-danger);
@@ -588,11 +604,11 @@ function endGame() {
   left: 0;
   right: 0;
   z-index: 100;
+  pointer-events: none; /* 让空白处点击穿透 */
 }
 
 .sheet-scroll {
-  width: 100%;
-  height: 100%;
+  pointer-events: auto; /* 恢复拖拽面板交互 */
   background: #f1ede1;
   /* 稍有区分度的背景 */
   border-radius: 24px 24px 0 0;
@@ -629,11 +645,11 @@ function endGame() {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 24px;
-  padding: 0 8px;
+  margin-bottom: 16px;
+  padding: 0 4px;
 
   .target-hint {
-    font-size: 15px;
+    font-size: 13px;
     color: var(--color-text-secondary);
     font-weight: 800;
 
@@ -645,7 +661,7 @@ function endGame() {
   }
 
   .amount-val {
-    font-size: 48px;
+    font-size: 36px;
     font-weight: 800;
     font-family: 'JetBrains Mono', system-ui;
     color: var(--color-text-primary);
@@ -656,55 +672,56 @@ function endGame() {
 
 .console-body {
   overflow: visible;
-  padding-bottom: 24px;
+  padding-bottom: 16px;
 }
 
 .chips-row {
   display: flex;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .numpad-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  padding-bottom: 8px;
+  gap: 6px;
+  padding-bottom: 4px;
 }
 
 :deep(.num-btn) {
-  height: 60px;
+  height: 48px;
   background-color: #fdfbf7 !important;
-  font-size: 26px !important;
+  font-size: 22px !important;
   font-weight: 800 !important;
   color: var(--color-text-primary) !important;
   border-radius: 8px !important;
-  box-shadow: 4px 4px 0px 0px var(--color-border) !important;
-  border: 4px solid var(--color-border) !important;
+  box-shadow: 2px 2px 0px 0px var(--color-border) !important;
+  border: 2px solid var(--color-border) !important;
 
   &:active {
-    box-shadow: 2px 2px 0px 0px var(--color-border) !important;
-    transform: translate(2px, 2px) !important;
+    box-shadow: 1px 1px 0px 0px var(--color-border) !important;
+    transform: translate(1px, 1px) !important;
   }
 }
 
 :deep(.btn-c) {
   color: var(--color-danger) !important;
-  font-size: 22px !important;
+  font-size: 18px !important;
 }
 
 :deep(.act-btn) {
-  height: 60px;
-  font-size: 16px !important;
+  height: 48px;
+  font-size: 13px !important;
   border-radius: 8px !important;
   color: #fdfbf7 !important;
   font-weight: 800 !important;
-  letter-spacing: 1px !important;
-  border: 4px solid var(--color-border) !important;
-  box-shadow: 4px 4px 0px 0px var(--color-border) !important;
+  letter-spacing: 0px !important;
+  border: 2px solid var(--color-border) !important;
+  box-shadow: 2px 2px 0px 0px var(--color-border) !important;
+  white-space: nowrap !important;
 
   &:active {
-    box-shadow: 2px 2px 0px 0px var(--color-border) !important;
-    transform: translate(2px, 2px) !important;
+    box-shadow: 1px 1px 0px 0px var(--color-border) !important;
+    transform: translate(1px, 1px) !important;
   }
 }
 
