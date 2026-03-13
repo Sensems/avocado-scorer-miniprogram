@@ -21,14 +21,10 @@
     <scroll-view class="players-grid-scroll" scroll-x :show-scrollbar="false">
       <view class="players-track">
         <view
-          v-for="player in store.players"
-          :key="player.id"
-          class="player-card"
-          :class="{
+          v-for="player in store.players" :key="player.id" class="player-card" :class="{
             'active': store.activeTargetId === player.id,
             'is-me': player.id === store.localOperatorId,
-          }"
-          @click="selectPlayer(player.id)"
+          }" @click="selectPlayer(player.id)"
         >
           <view class="card-inner">
             <view class="p-header">
@@ -53,15 +49,21 @@
       <view class="log-box-inner">
         <scroll-view class="log-scroll-area" scroll-y>
           <view class="log-list">
-            <view
-              v-for="log in store.historyStack.slice().reverse()"
-              :key="log.id"
-              class="log-item"
-            >
+            <view v-for="log in store.historyStack.slice().reverse()" :key="log.id" class="log-item">
               <view class="log-content">
-                <text class="time">{{ new Date(log.timestamp).toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) }}</text>
+                <text class="time">
+                  {{ new Date(log.timestamp).toLocaleTimeString('zh-CN', {
+                    hour12: false,
+                    hour:
+                      '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit' }) }}
+                </text>
                 <text class="detail">{{ log.toName }} 收 {{ log.fromName }}</text>
-                <text class="amount highlight" :class="{ positive: log.amount > 0 }">{{ log.amount > 0 ? '+' : '' }}{{ log.amount }}</text>
+                <text class="amount highlight" :class="{ positive: log.amount > 0 }">
+                  {{ log.amount > 0 ? '+' : '' }}{{
+                    log.amount }}
+                </text>
               </view>
               <view v-if="log.id === store.lastScoreLog?.id" class="undo-btn" @click.stop="undo">
                 撤销
@@ -78,10 +80,7 @@
     <!-- Skyline Draggable Sheet -->
     <!-- #ifdef MP-WEIXIN -->
     <draggable-sheet
-      class="bottom-sheet"
-      :initial-child-size="0.22"
-      :min-child-size="0.22"
-      :max-child-size="0.75"
+      class="bottom-sheet" :initial-child-size="0.22" :min-child-size="0.22" :max-child-size="0.75"
       :snap="true"
     >
       <scroll-view class="sheet-scroll" scroll-y type="list" :show-scrollbar="false">
@@ -342,6 +341,7 @@ function endGame() {
     display: flex;
     align-items: center;
     justify-content: center;
+
     .icon {
       font-size: 18px;
     }
@@ -368,14 +368,20 @@ function endGame() {
 }
 
 .players-track {
-  display: inline-flex;
-  gap: 12px;
-  padding: 0 16px;
+  display: flex;
+  gap: 8px;
+  /* 减小间距 */
+  padding: 12px 12px 0;
+  /* 减小两侧边距 */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .player-card {
-  width: 120px;
-  flex-shrink: 0;
+  flex: 1;
+  /* 平分空间 */
+  min-width: 0;
+  /* 允许压缩以平分 flex */
   background: #fdfbf7;
   border-radius: 12px;
   position: relative;
@@ -386,11 +392,13 @@ function endGame() {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 12px 6px;
-  box-shadow: 3px 3px 0px 0px var(--color-border);
+  padding: 10px 4px;
+  /* 减小上下左右内边距 */
+  box-shadow: 2px 2px 0px 0px var(--color-border);
+  /* 减小阴影占位 */
 
   &.active {
-    box-shadow: 6px 6px 0px 0px var(--color-border);
+    box-shadow: 4px 4px 0px 0px var(--color-border);
     transform: translateY(-4px) scale(1.02);
     border-color: var(--color-primary);
   }
@@ -426,20 +434,23 @@ function endGame() {
   gap: 6px;
 
   .avatar-sm {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
+    width: 26px;
+    /* 进一步缩小头像以挤出横向空间 */
+    height: 26px;
+    border-radius: 6px;
     background: var(--color-primary);
-    border: 3px solid var(--color-border);
+    border: 2px solid var(--color-border);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 800;
     color: #fdfbf7;
   }
+
   .name {
-    font-size: 12px;
+    font-size: 11px;
+    /* 缩小字号 */
     font-weight: 800;
     color: var(--color-text-primary);
     white-space: nowrap;
@@ -450,7 +461,8 @@ function endGame() {
 }
 
 .score-display {
-  font-size: 24px;
+  font-size: 20px;
+  /* 缩小分数字号，之前太大挤压空间 */
   font-weight: 800;
   font-family: 'JetBrains Mono', 'Inter', system-ui;
   font-variant-numeric: tabular-nums;
@@ -461,6 +473,7 @@ function endGame() {
   &.positive {
     color: var(--color-danger);
   }
+
   &.negative {
     color: var(--color-primary);
   }
@@ -474,7 +487,8 @@ function endGame() {
 
 .log-box-wrapper {
   flex: 1;
-  padding: 12px 16px 20vh; /* 留出底部 Skyline Sheet 空间 */
+  padding: 12px 16px 20vh;
+  /* 留出底部 Skyline Sheet 空间 */
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -525,14 +539,17 @@ function endGame() {
       font-family: 'JetBrains Mono', monospace;
       font-weight: 800;
     }
+
     .detail {
       font-size: 14px;
       font-weight: 800;
       color: var(--color-text-primary);
     }
+
     .amount {
       font-size: 16px;
       font-weight: 800;
+
       &.positive {
         color: var(--color-danger);
       }
@@ -575,7 +592,8 @@ function endGame() {
 .sheet-scroll {
   width: 100%;
   height: 100%;
-  background: #f1ede1; /* 稍有区分度的背景 */
+  background: #f1ede1;
+  /* 稍有区分度的背景 */
   border-radius: 24px 24px 0 0;
   border-top: 4px solid var(--color-border);
   box-shadow: 0 -8px 0px -4px var(--color-border);
